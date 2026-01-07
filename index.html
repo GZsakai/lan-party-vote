@@ -244,36 +244,69 @@
 
   // 8) Render
   ref.on('value', snap => {
-    const data = snap.val() || {};
+    const raw = snap.val() || {};
     const container = document.getElementById('options');
     container.innerHTML = '';
 
-    const ids = Object.keys(data).sort((a,b)=> (data[b]?.votes||0) - (data[a]?.votes||0));
+    // Flatten: támogatjuk a régi adatokat is (ha valaki "/"-t írt a névbe, az beágyazott útvonal lett)
+    const items = [];
+    const isOptionNode = (node) => node && typeof node === 'object' && (
+      Object.prototype.hasOwnProperty.call(node, 'votes') ||
+      Object.prototype.hasOwnProperty.call(node, 'voters') ||
+      Object.prototype.hasOwnProperty.call(node, 'createdBy') ||
+      Object.prototype.hasOwnProperty.call(node, 'title')
+    );
 
-    ids.forEach(optionId => {
-      const o = data[optionId] || {};
-      const title = (o.title && String(o.title).trim()) ? String(o.title).trim() : optionId;
+    function collect(node, pathParts) {
+      if (!node || typeof node !== 'object') return;
+      if (isOptionNode(node)) {
+        const path = pathParts.join('/');
+        items.push({ path, node });
+        return;
+      }
+      // nem opció, menjünk lejjebb
+      Object.keys(node).forEach(k => collect(node[k], pathParts.concat(k)));
+    }
+
+    Object.keys(raw).forEach(k => collect(raw[k], [k]));
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'option';
+      empty.innerHTML = '<div class="muted">Még nincs opció. Adj hozzá egyet lent 👇</div>';
+      container.appendChild(empty);
+      return;
+    }
+
+    // rendezés: legtöbb szavazat elöl
+    items.sort((a, b) => ((b.node?.votes || 0) - (a.node?.votes || 0)));
+
+    items.forEach(({ path: optionPath, node: o }) => {
+      const title = (o.title && String(o.title).trim()) ? String(o.title).trim() : optionPath;
 
       const votersObj = o.voters || {};
       const voterNames = Object.values(votersObj)
         .map(x => x && x.nick)
         .filter(Boolean)
-        .sort((x,y)=> x.localeCompare(y,'hu'));
+        .sort((x, y) => x.localeCompare(y, 'hu'));
 
       const badges = [];
       badges.push(`<span class="pill">${o.votes || 0} szavazat</span>`);
-      if(o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
-      if(o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
-      if(o.createdBy) badges.push(`<span class="pill">➕ ${escapeAttr(o.createdBy)}</span>`);
+      if (o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
+      if (o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
+      if (o.createdBy) badges.push(`<span class="pill">➕ ${escapeAttr(o.createdBy)}</span>`);
 
-      const linkHtml = o.link ? `<a href="${escapeAttr(o.link)}" target="_blank" rel="noopener">🔗 Link megnyitása</a>` : '';
+      const linkHtml = o.link
+        ? `<a href="${escapeAttr(o.link)}" target="_blank" rel="noopener">🔗 Link megnyitása</a>`
+        : '';
 
       const votersHtml = voterNames.length
         ? `<div class="voters"><b>Szavazók (${voterNames.length}):</b> ${voterNames.map(escapeAttr).join(', ')}</div>`
         : `<div class="voters"><b>Szavazók (0):</b> még senki</div>`;
 
       const isOwner = !!currentNick && o.createdBy === currentNick;
-      const editPanelId = `edit_${toSafeKey(optionId)}`;
+      const uiId = toSafeKey(optionPath);
+      const editPanelId = `edit_${uiId}`;
 
       const div = document.createElement('div');
       div.className = 'option';
@@ -310,17 +343,20 @@
         ${votersHtml}
       `;
 
-      div.querySelector('button[data-act="vote"]').onclick = () => vote(optionId);
+      div.querySelector('button[data-act="vote"]').onclick = () => vote(optionPath);
 
-      if(isOwner){
+      if (isOwner) {
         const panel = div.querySelector('#' + editPanelId);
         div.querySelector('button[data-act="edit"]').onclick = () => panel.classList.toggle('hidden');
         div.querySelector('button[data-act="cancel"]').onclick = () => panel.classList.add('hidden');
-        div.querySelector('button[data-act="save"]').onclick = () => saveEdit(optionId);
+        div.querySelector('button[data-act="save"]').onclick = () => saveEdit(optionPath);
       }
 
       container.appendChild(div);
     });
+  }, (err) => {
+    console.error(err);
+    toast('⛔ Nem tudom olvasni az adatbázist (Rules?)');
   });
 </script>
 </body>
