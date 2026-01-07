@@ -41,6 +41,9 @@
   <div class="card">
     <h1>🎮 LAN Party Szavazás</h1>
     <div class="muted" id="gateInfo"></div>
+    <div class="muted" id="debug" style="margin-top:6px"></div>
+
+    <div id="toast" class="toast hidden"></div>
 
     <div id="login">
       <input id="nick" placeholder="Add meg a nickneved" maxlength="24" />
@@ -57,7 +60,7 @@
         <button class="btnSmall btnGhost" id="logoutBtn" type="button">Nick váltása</button>
       </div>
 
-      <div id="toast" class="toast hidden"></div>
+      
 
       <div id="options"></div>
 
@@ -115,6 +118,12 @@
   const db = firebase.database();
   const ref = db.ref('votes');
 
+  // Connection debug
+  const debugEl = document.getElementById('debug');
+  db.ref('.info/connected').on('value', s => {
+    debugEl.textContent = s.val() ? '🟢 Firebase kapcsolat: OK' : '🟠 Firebase kapcsolat: nincs (betöltés alatt?)';
+  });
+
   // 3) Toast
   let toastTimer=null;
   function toast(msg){
@@ -122,7 +131,7 @@
     t.textContent=msg;
     t.classList.remove('hidden');
     clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>t.classList.add('hidden'),2200);
+    toastTimer=setTimeout(()=>t.classList.add('hidden'),2600);
   }
 
   // 4) Login state
@@ -271,12 +280,15 @@
     Object.keys(raw).forEach(k => collect(raw[k], [k]));
 
     if (items.length === 0) {
+      debugEl.textContent = (debugEl.textContent ? debugEl.textContent + ' · ' : '') + '🧾 0 opció a /votes alatt';
       const empty = document.createElement('div');
       empty.className = 'option';
       empty.innerHTML = '<div class="muted">Még nincs opció. Adj hozzá egyet lent 👇</div>';
       container.appendChild(empty);
       return;
     }
+
+    debugEl.textContent = (debugEl.textContent ? debugEl.textContent + ' · ' : '') + `🧾 Betöltött opciók: ${items.length}`;
 
     // rendezés: legtöbb szavazat elöl
     items.sort((a, b) => ((b.node?.votes || 0) - (a.node?.votes || 0)));
