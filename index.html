@@ -251,15 +251,20 @@
     const gamepass = document.getElementById('gamepass').checked;
     if (!name) return;
 
-    ref.child(name).transaction(current => {
+    ref.child(id).transaction nem tartalmazhatja: . # $ [ ] /
+    // Ezért az adatbázisban egy "biztonságos" ID-t használunk, és eltároljuk a megjelenített címet külön.
+    const id = toSafeKey(name);
+
+    ref.child(id).transaction(current => {
       if (current) {
-        // csak "okosan" frissítünk: ha eddig üres/hamis volt
+        if ((!current.title || current.title === '') && name) current.title = name;
         if ((!current.link || current.link === '') && link) current.link = link;
         if (!current.needBuy && needBuy) current.needBuy = true;
         if (!current.gamepass && gamepass) current.gamepass = true;
         return current;
       }
       return {
+        title: name,
         votes: 0,
         link: link,
         needBuy: !!needBuy,
@@ -277,14 +282,12 @@
   }
 
   // 7) Szavazás: 1 nick = 1 szavazat / opció
-  function vote(optionName) {
+  function vote(optionId) {
     if (!currentNick) return;
-    const nickKey = toSafeKey(currentNick);
+    consntNick);
 
-    const optionRef = ref.child(optionName);
-    const voterRef = optionRef.child('voters').child(nickKey);
-
-    voterRef.transaction(existing => {
+    const optionRef = ref.child(optionId);
+    const voterRef = optionRef.child('voters').childsting => {
       if (existing) return; // már szavazott
       return { nick: currentNick, at: Date.now() };
     }, (error, committed) => {
@@ -306,15 +309,7 @@
   ref.on('value', snap => {
     const data = snap.val() || {};
     const container = document.getElementById('options');
-    container.innerHTML = '';
-
-    const keys = Object.keys(data).sort((a, b) => (data[b]?.votes || 0) - (data[a]?.votes || 0));
-
-    keys.forEach(name => {
-      const o = data[name] || {};
-      const votersObj = o.voters || {};
-      const voterNames = Object.values(votersObj)
-        .map(x => x?.nick)
+    containeap(x => x?.nick)
         .filter(Boolean)
         .sort((x, y) => x.localeCompare(y, 'hu'));
 
@@ -323,7 +318,7 @@
         : '';
 
       const badges = [];
-      badges.push(`<span class="pill">${o.votes || 0} szavazat</span>`);
+      badges.push(`<span classvazat</span>`);
       if (o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
       if (o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
 
@@ -332,21 +327,19 @@
         : `<div class="voters"><b>Szavazók (0):</b> még senki</div>`;
 
       const isOwner = !!currentNick && o.createdBy === currentNick;
+      const displayTitle = (o.title && String(o.title).trim()) ? String(o.title).trim() : id;
       const ownerHtml = o.createdBy ? `<span class="pill">➕ ${o.createdBy}</span>` : '';
 
-      const editPanelId = `edit_${toSafeKey(name)}`;
+      const editPanelId = `edit_${toSafeKey(id)}`;
 
       const div = document.createElement('div');
       div.className = 'option';
       div.innerHTML = `
-        <div class="optionHeader">
-          <div style="min-width:0">
-            <div class="optionTitle">${name}</div>
+        <div class="optionHeadss="optionTitle">${displayTitle}</div>
             ${linkHtml}
             <div class="badges">${badges.join('')}${ownerHtml}</div>
           </div>
-          <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; justify-content:flex-end;">
-            <button class="btnSmall" type="button" data-action="vote">Szavazok</button>
+          <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; justify-content:fl type="button" data-action="vote">Szavazok</button>
             ${isOwner ? `<button class="btnSmall btnGhost" type="button" data-action="edit">Szerkesztés</button>` : ''}
           </div>
         </div>
@@ -371,7 +364,7 @@
       `;
 
       const voteBtn = div.querySelector('button[data-action="vote"]');
-      voteBtn.onclick = () => vote(name);
+      voteBtn.onclick = () => vote(id);
 
       if (isOwner) {
         const editBtn = div.querySelector('button[data-action="edit"]');
