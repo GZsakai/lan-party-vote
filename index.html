@@ -8,15 +8,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body{font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;display:flex;justify-content:center;padding:20px}
-    .card{background:#020617;padding:20px;border-radius:12px;width:100%;max-width:720px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+    .card{background:#020617;padding:20px;border-radius:12px;width:100%;max-width:760px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
     h1{text-align:center;margin:0 0 10px}
     .muted{color:#94a3b8;font-size:13px}
+    .hidden{display:none}
     input,button{width:100%;padding:10px;border-radius:8px;border:none;margin-top:8px;font-size:15px}
     button{background:#2563eb;color:#fff;cursor:pointer}
     button:hover{background:#1d4ed8}
     .row{display:grid;grid-template-columns:1fr;gap:8px}
     @media (min-width:560px){.row.two{grid-template-columns:1fr 1fr}}
-    .hidden{display:none}
+
     .toast{margin-top:10px;padding:10px;border-radius:10px;border:1px solid #1e293b;background:rgba(148,163,184,.06);font-size:13px}
 
     .option{background:#020617;border:1px solid #1e293b;border-radius:10px;padding:12px;margin-top:10px}
@@ -42,12 +43,11 @@
     <h1>🎮 LAN Party Szavazás</h1>
     <div class="muted" id="gateInfo"></div>
     <div class="muted" id="debug" style="margin-top:6px"></div>
-
     <div id="toast" class="toast hidden"></div>
 
     <div id="login">
       <input id="nick" placeholder="Add meg a nickneved" maxlength="24" />
-      <button id="loginBtn" type="button">Belépés</button>
+      <button type="button" onclick="doLogin()">Belépés</button>
       <div class="muted">Tipp: legyen egyedi (pl. "Pisti#1"), hogy lássuk ki szavazott.</div>
     </div>
 
@@ -57,10 +57,8 @@
           Belépve mint: <strong id="nickDisplay"></strong>
           <div class="muted">Egy opcióra csak <b>egyszer</b> szavazhatsz (nicken belül), de több opcióra igen.</div>
         </div>
-        <button class="btnSmall btnGhost" id="logoutBtn" type="button">Nick váltása</button>
+        <button class="btnSmall btnGhost" type="button" onclick="doLogout()">Nick váltása</button>
       </div>
-
-      
 
       <div id="options"></div>
 
@@ -74,7 +72,7 @@
           <label class="check"><input type="checkbox" id="needBuy" /> Meg kell venni</label>
           <label class="check"><input type="checkbox" id="gamepass" /> Game Pass-os</label>
         </div>
-        <button id="addBtn" type="button">Opció hozzáadása</button>
+        <button type="button" onclick="addOption()">Opció hozzáadása</button>
         <div class="muted">Szerkeszteni csak a létrehozó tudja (nick alapján, laza LAN mód).</div>
       </div>
     </div>
@@ -92,10 +90,9 @@
     projectId: "lan-party-vote"
   };
 
-  // ---- Helpers
   // Firebase kulcs: nem lehet . # $ [ ] /
   function toSafeKey(s){ return (s||'').replace(/[\.#$\[\]\/]/g,'_'); }
-  // DOM id: legyen biztosan "CSS selector safe" (nincs szóköz, ékezet, stb.)
+  // DOM id: csak [a-zA-Z0-9_-]
   function toDomKey(s){ return String(s||'').replace(/[^a-zA-Z0-9_-]/g,'_'); }
   function escapeAttr(s){
     return String(s||'')
@@ -106,28 +103,7 @@
       .replace(/'/g,'&#39;');
   }
 
-  // 1) Token gate
-  const params = new URLSearchParams(window.location.search);
-  const tokenOk = params.get('token') === REQUIRED_TOKEN;
-  const gateInfo = document.getElementById('gateInfo');
-  gateInfo.textContent = tokenOk ? '✅ Privát link: OK' : '⛔ Nincs jogosultság (rossz token)';
-  if(!tokenOk){
-    document.getElementById('login').classList.add('hidden');
-    throw new Error('Invalid token');
-  }
-
-  // 2) Firebase init
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const ref = db.ref('votes');
-
-  // Connection debug
-  const debugEl = document.getElementById('debug');
-  db.ref('.info/connected').on('value', s => {
-    debugEl.textContent = s.val() ? '🟢 Firebase kapcsolat: OK' : '🟠 Firebase kapcsolat: nincs (betöltés alatt?)';
-  });
-
-  // 3) Toast
+  // Toast
   let toastTimer=null;
   function toast(msg){
     const t=document.getElementById('toast');
@@ -137,45 +113,58 @@
     toastTimer=setTimeout(()=>t.classList.add('hidden'),2600);
   }
 
-  // 4) Login state
+  // Token gate
+  const params = new URLSearchParams(window.location.search);
+  const tokenOk = params.get('token') === REQUIRED_TOKEN;
+  const gateInfo = document.getElementById('gateInfo');
+  gateInfo.textContent = tokenOk ? '✅ Privát link: OK' : '⛔ Nincs jogosultság (rossz token)';
+  if(!tokenOk){
+    document.getElementById('login').classList.add('hidden');
+    throw new Error('Invalid token');
+  }
+
+  // Firebase init
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const ref = db.ref('votes');
+  const debugEl = document.getElementById('debug');
+
+  db.ref('.info/connected').on('value', s => {
+    debugEl.textContent = s.val() ? '🟢 Firebase kapcsolat: OK' : '🟠 Firebase kapcsolat: nincs (betöltés alatt?)';
+  });
+
+  // Login state
   let currentNick = localStorage.getItem('nick') || '';
-  const loginDiv = document.getElementById('login');
-  const appDiv = document.getElementById('app');
-  const nickDisplay = document.getElementById('nickDisplay');
-
   function showApp(){
-    loginDiv.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    nickDisplay.textContent = currentNick;
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('nickDisplay').textContent = currentNick;
   }
-
   function showLogin(){
-    appDiv.classList.add('hidden');
-    loginDiv.classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
   }
 
-  function doLogin(){
+  // Global functions (onclick miatt)
+  window.doLogin = function(){
     const nick = (document.getElementById('nick').value || '').trim();
     if(!nick){ toast('Adj meg egy nicknevet'); return; }
     currentNick = nick;
     localStorage.setItem('nick', nick);
     showApp();
-  }
+  };
 
-  function doLogout(){
+  window.doLogout = function(){
     localStorage.removeItem('nick');
     currentNick='';
     showLogin();
-  }
+    toast('Nick törölve');
+  };
 
-  document.getElementById('loginBtn').addEventListener('click', doLogin);
-  document.getElementById('logoutBtn').addEventListener('click', () => location.reload());
-
-  // auto-login if saved
   if(currentNick) showApp();
 
-  // 5) Add option (ID safe, title stored)
-  function addOption(){
+  // Add option (safe ID + title)
+  window.addOption = function(){
     if(!currentNick){ toast('Előbb lépj be nickkel'); return; }
 
     const title = (document.getElementById('name').value || '').trim();
@@ -185,10 +174,8 @@
     if(!title){ toast('Adj meg egy opció nevet'); return; }
 
     const id = toSafeKey(title);
-
     ref.child(id).transaction(current => {
       if(current){
-        // laza frissítés: ha eddig üres/hamis volt
         if((!current.title || current.title==='') && title) current.title = title;
         if((!current.link || current.link==='') && link) current.link = link;
         if(!current.needBuy && needBuy) current.needBuy = true;
@@ -211,11 +198,9 @@
     document.getElementById('needBuy').checked=false;
     document.getElementById('gamepass').checked=false;
     toast('✅ Opció hozzáadva');
-  }
+  };
 
-  document.getElementById('addBtn').addEventListener('click', addOption);
-
-  // 6) Vote (1 nick per option)
+  // Vote
   function vote(optionId){
     if(!currentNick){ toast('Előbb lépj be nickkel'); return; }
     const nickKey = toSafeKey(currentNick);
@@ -223,7 +208,7 @@
     const voterRef = optionRef.child('voters').child(nickKey);
 
     voterRef.transaction(existing => {
-      if(existing) return; // already voted
+      if(existing) return;
       return { nick: currentNick, at: Date.now() };
     }, (error, committed) => {
       if(error){ console.error(error); toast('⛔ Hiba a szavazásnál'); return; }
@@ -233,9 +218,9 @@
     });
   }
 
-  // 7) Edit (only creator; LAN-laza)
+  // Edit
   function saveEdit(optionId){
-    const panelId = `edit_${toSafeKey(optionId)}`;
+    const panelId = `edit_${toDomKey(optionId)}`;
     const newLink = (document.getElementById(panelId + '_link').value || '').trim();
     const newNeedBuy = document.getElementById(panelId + '_needBuy').checked;
     const newGamepass = document.getElementById(panelId + '_gamepass').checked;
@@ -254,16 +239,14 @@
     });
   }
 
-  // 8) Render
+  // Render (supports legacy nested paths)
   ref.on('value', snap => {
     const raw = snap.val() || {};
     const container = document.getElementById('options');
     container.innerHTML = '';
 
-    // Flatten: támogatjuk a régi adatokat is (ha valaki "/"-t írt a névbe, az beágyazott útvonal lett)
     const items = [];
     const isOptionNode = (node) => {
-      // Régi adatoknál előfordulhat, hogy az opció értéke csak egy szám (pl. szavazatszám)
       if (typeof node === 'number') return true;
       return node && typeof node === 'object' && (
         Object.prototype.hasOwnProperty.call(node, 'votes') ||
@@ -273,97 +256,63 @@
       );
     };
 
-    function collect(node, pathParts) {
-      if (node === null || node === undefined) return;
-
-      // Ha a node csak egy szám, tekintsük opcióként (legacy)
-      if (typeof node === 'number') {
+    function collect(node, pathParts){
+      if(node === null || node === undefined) return;
+      if(typeof node === 'number'){
         const path = pathParts.join('/');
-        const fallbackTitle = pathParts[pathParts.length - 1] || path;
-        items.push({
-          path,
-          node: {
-            title: fallbackTitle,
-            votes: node,
-            link: '',
-            needBuy: false,
-            gamepass: false,
-            createdBy: '',
-            voters: {}
-          }
-        });
+        const fallbackTitle = pathParts[pathParts.length-1] || path;
+        items.push({ path, node: { title: fallbackTitle, votes: node, link:'', needBuy:false, gamepass:false, createdBy:'', voters:{} } });
         return;
       }
-
-      if (typeof node !== 'object') return;
-
-      if (isOptionNode(node)) {
-        const path = pathParts.join('/');
-        items.push({ path, node });
+      if(typeof node !== 'object') return;
+      if(isOptionNode(node)){
+        items.push({ path: pathParts.join('/'), node });
         return;
       }
-
-      Object.keys(node).forEach(k => collect(node[k], pathParts.concat(k)));
-    });
-        return;
-      }
-      // nem opció, menjünk lejjebb
       Object.keys(node).forEach(k => collect(node[k], pathParts.concat(k)));
     }
 
     Object.keys(raw).forEach(k => collect(raw[k], [k]));
 
-    if (items.length === 0) {
+    if(items.length === 0){
       debugEl.textContent = (debugEl.textContent ? debugEl.textContent + ' · ' : '') + '🧾 0 opció a /votes alatt';
-      const empty = document.createElement('div');
-      empty.className = 'option';
-      empty.innerHTML = '<div class="muted">Még nincs opció. Adj hozzá egyet lent 👇</div>';
+      const empty=document.createElement('div');
+      empty.className='option';
+      empty.innerHTML='<div class="muted">Még nincs opció. Adj hozzá egyet lent 👇</div>';
       container.appendChild(empty);
       return;
     }
 
-    debugEl.textContent = (debugEl.textContent ? debugEl.textContent + ' · ' : '') + `🧾 Betöltött opciók: ${items.length}`;
+    items.sort((a,b)=> (b.node?.votes||0) - (a.node?.votes||0));
 
-    // extra debug: listázzuk a megtalált címeket (max 6)
-    const preview = items.slice(0, 6).map(it => {
+    const preview = items.slice(0,6).map(it => {
       const n = it.node || {};
-      const t = (n.title && String(n.title).trim()) ? String(n.title).trim() : it.path;
-      return t;
+      return (n.title && String(n.title).trim()) ? String(n.title).trim() : it.path;
     });
-    debugEl.textContent += preview.length ? ` · 🔎 ${preview.join(' | ')}${items.length > 6 ? ' …' : ''}` : '';
+    debugEl.textContent = (debugEl.textContent ? debugEl.textContent.split(' · ')[0] : '') + ` · 🧾 Betöltött opciók: ${items.length}` + (preview.length ? ` · 🔎 ${preview.join(' | ')}${items.length>6?' …':''}` : '');
 
-    // rendezés: legtöbb szavazat elöl
-    items.sort((a, b) => ((b.node?.votes || 0) - (a.node?.votes || 0)));
-
-    items.forEach(({ path: optionPath, node: o }) => {
-      const title = (o.title && String(o.title).trim()) ? String(o.title).trim() : optionPath;
+    items.forEach(({path: optionId, node: o}) => {
+      const title = (o.title && String(o.title).trim()) ? String(o.title).trim() : optionId;
 
       const votersObj = o.voters || {};
-      const voterNames = Object.values(votersObj)
-        .map(x => x && x.nick)
-        .filter(Boolean)
-        .sort((x, y) => x.localeCompare(y, 'hu'));
+      const voterNames = Object.values(votersObj).map(x => x && x.nick).filter(Boolean).sort((x,y)=>x.localeCompare(y,'hu'));
 
-      const badges = [];
+      const badges=[];
       badges.push(`<span class="pill">${o.votes || 0} szavazat</span>`);
-      if (o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
-      if (o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
-      if (o.createdBy) badges.push(`<span class="pill">➕ ${escapeAttr(o.createdBy)}</span>`);
+      if(o.needBuy) badges.push('<span class="pill">💸 Meg kell venni</span>');
+      if(o.gamepass) badges.push('<span class="pill">🎮 Game Pass</span>');
+      if(o.createdBy) badges.push(`<span class="pill">➕ ${escapeAttr(o.createdBy)}</span>`);
 
-      const linkHtml = o.link
-        ? `<a href="${escapeAttr(o.link)}" target="_blank" rel="noopener">🔗 Link megnyitása</a>`
-        : '';
-
+      const linkHtml = o.link ? `<a href="${escapeAttr(o.link)}" target="_blank" rel="noopener">🔗 Link megnyitása</a>` : '';
       const votersHtml = voterNames.length
         ? `<div class="voters"><b>Szavazók (${voterNames.length}):</b> ${voterNames.map(escapeAttr).join(', ')}</div>`
         : `<div class="voters"><b>Szavazók (0):</b> még senki</div>`;
 
       const isOwner = !!currentNick && o.createdBy === currentNick;
-      const uiId = toDomKey(optionPath);
-      const editPanelId = `edit_${uiId}`;
+      const editPanelId = `edit_${toDomKey(optionId)}`;
 
-      const div = document.createElement('div');
-      div.className = 'option';
+      const div=document.createElement('div');
+      div.className='option';
       div.innerHTML = `
         <div class="optionHeader">
           <div style="min-width:0">
@@ -397,18 +346,19 @@
         ${votersHtml}
       `;
 
-      div.querySelector('button[data-act="vote"]').onclick = () => vote(optionPath);
+      div.querySelector('button[data-act="vote"]').onclick = () => vote(optionId);
 
-      if (isOwner) {
+      if(isOwner){
         const panel = div.querySelector('#' + editPanelId);
         div.querySelector('button[data-act="edit"]').onclick = () => panel.classList.toggle('hidden');
         div.querySelector('button[data-act="cancel"]').onclick = () => panel.classList.add('hidden');
-        div.querySelector('button[data-act="save"]').onclick = () => saveEdit(optionPath);
+        div.querySelector('button[data-act="save"]').onclick = () => saveEdit(optionId);
       }
 
       container.appendChild(div);
     });
-  }, (err) => {
+
+  }, (err)=>{
     console.error(err);
     toast('⛔ Nem tudom olvasni az adatbázist (Rules?)');
   });
