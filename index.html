@@ -7,130 +7,34 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      display: flex;
-      justify-content: center;
-      padding: 20px;
-    }
-    .card {
-      background: #020617;
-      padding: 20px;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 720px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.4);
-    }
-    h1 { text-align: center; margin: 0 0 10px; }
-    .muted { color: #94a3b8; font-size: 13px; }
+    body{font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;display:flex;justify-content:center;padding:20px}
+    .card{background:#020617;padding:20px;border-radius:12px;width:100%;max-width:720px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+    h1{text-align:center;margin:0 0 10px}
+    .muted{color:#94a3b8;font-size:13px}
+    input,button{width:100%;padding:10px;border-radius:8px;border:none;margin-top:8px;font-size:15px}
+    button{background:#2563eb;color:#fff;cursor:pointer}
+    button:hover{background:#1d4ed8}
+    .row{display:grid;grid-template-columns:1fr;gap:8px}
+    @media (min-width:560px){.row.two{grid-template-columns:1fr 1fr}}
+    .hidden{display:none}
+    .toast{margin-top:10px;padding:10px;border-radius:10px;border:1px solid #1e293b;background:rgba(148,163,184,.06);font-size:13px}
 
-    input, button {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      margin-top: 8px;
-      font-size: 15px;
-    }
-    button {
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover { background: #1d4ed8; }
+    .option{background:#020617;border:1px solid #1e293b;border-radius:10px;padding:12px;margin-top:10px}
+    .optionHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .optionTitle{font-weight:700;font-size:16px}
+    a{color:#60a5fa;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #1e293b;color:#cbd5e1;background:rgba(148,163,184,.06);white-space:nowrap}
+    .btnSmall{width:auto;padding:8px 10px;border-radius:8px;font-size:13px;margin-top:0}
+    .btnGhost{background:transparent;border:1px solid #1e293b;color:#e5e7eb}
+    .btnGhost:hover{background:rgba(148,163,184,.08)}
+    .voters{margin-top:10px;padding-top:10px;border-top:1px dashed #1e293b;font-size:13px;color:#cbd5e1;line-height:1.35}
+    .voters b{color:#e5e7eb}
 
-    .row { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    @media (min-width: 560px) {
-      .row.two { grid-template-columns: 1fr 1fr; }
-      .row.three { grid-template-columns: 1fr 1fr 1fr; }
-    }
-
-    .option {
-      background: #020617;
-      border: 1px solid #1e293b;
-      border-radius: 10px;
-      padding: 12px;
-      margin-top: 10px;
-    }
-    .optionHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .optionTitle { font-weight: 700; font-size: 16px; }
-
-    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-    .pill {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid #1e293b;
-      color: #cbd5e1;
-      background: rgba(148,163,184,.06);
-      white-space: nowrap;
-    }
-
-    .btnSmall {
-      width: auto;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-top: 0;
-    }
-    .btnGhost {
-      background: transparent;
-      border: 1px solid #1e293b;
-      color: #e5e7eb;
-    }
-    .btnGhost:hover { background: rgba(148,163,184,.08); }
-
-    a { color: #60a5fa; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    .voters {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed #1e293b;
-      font-size: 13px;
-      color: #cbd5e1;
-      line-height: 1.35;
-    }
-    .voters b { color: #e5e7eb; }
-
-    .hidden { display: none; }
-
-    .toast {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #1e293b;
-      background: rgba(148,163,184,.06);
-      color: #e5e7eb;
-      font-size: 13px;
-    }
-
-    .checks {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 8px;
-      align-items: center;
-    }
-    .check {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid #1e293b;
-      background: rgba(148,163,184,.04);
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 13px;
-      color: #e5e7eb;
-    }
-    .check input { width: auto; margin: 0; padding: 0; }
+    .checks{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;align-items:center}
+    .check{display:flex;gap:8px;align-items:center;border:1px solid #1e293b;background:rgba(148,163,184,.04);padding:8px 10px;border-radius:10px;font-size:13px}
+    .check input{width:auto;margin:0;padding:0}
   </style>
 </head>
 <body>
@@ -140,7 +44,7 @@
 
     <div id="login">
       <input id="nick" placeholder="Add meg a nickneved" maxlength="24" />
-      <button onclick="login()">Belépés</button>
+      <button id="loginBtn" type="button">Belépés</button>
       <div class="muted">Tipp: legyen egyedi (pl. "Pisti#1"), hogy lássuk ki szavazott.</div>
     </div>
 
@@ -148,9 +52,9 @@
       <div class="row two">
         <div>
           Belépve mint: <strong id="nickDisplay"></strong>
-          <div class="muted">Egy opcióra csak <b>egyszer</b> szavazhatsz, de több opcióra igen.</div>
+          <div class="muted">Egy opcióra csak <b>egyszer</b> szavazhatsz (nicken belül), de több opcióra igen.</div>
         </div>
-        <button class="btnSmall btnGhost" onclick="logout()">Nick váltása</button>
+        <button class="btnSmall btnGhost" id="logoutBtn" type="button">Nick váltása</button>
       </div>
 
       <div id="toast" class="toast hidden"></div>
@@ -167,17 +71,17 @@
           <label class="check"><input type="checkbox" id="needBuy" /> Meg kell venni</label>
           <label class="check"><input type="checkbox" id="gamepass" /> Game Pass-os</label>
         </div>
-        <button onclick="addOption()">Opció hozzáadása</button>
-        <div class="muted">Tipp: ha egy opció már létezik, a jelölők és a link csak akkor frissülnek, ha eddig üres/hamis volt.</div>
+        <button id="addBtn" type="button">Opció hozzáadása</button>
+        <div class="muted">Szerkeszteni csak a létrehozó tudja (nick alapján, laza LAN mód).</div>
       </div>
     </div>
   </div>
 
 <script>
-  // 🔐 TITKOS LINK TOKEN (csak akinek megvan a link)
+  // 🔐 Privát link token
   const REQUIRED_TOKEN = 'lanparty2026';
 
-  // 🔥 FIREBASE – IDE A SAJÁTOD
+  // 🔥 Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyBEhR52XM8wMvk4zThtopiE9GtifTtFU4o",
     authDomain: "lan-party-vote.firebaseapp.com",
@@ -185,14 +89,23 @@
     projectId: "lan-party-vote"
   };
 
-  // -----------------------------
+  // ---- Helpers
+  function toSafeKey(s){ return (s||'').replace(/[\.#$\[\]\/]/g,'_'); }
+  function escapeAttr(s){
+    return String(s||'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
 
-  // 1) Link-gate (token)
+  // 1) Token gate
   const params = new URLSearchParams(window.location.search);
   const tokenOk = params.get('token') === REQUIRED_TOKEN;
   const gateInfo = document.getElementById('gateInfo');
   gateInfo.textContent = tokenOk ? '✅ Privát link: OK' : '⛔ Nincs jogosultság (rossz token)';
-  if (!tokenOk) {
+  if(!tokenOk){
     document.getElementById('login').classList.add('hidden');
     throw new Error('Invalid token');
   }
@@ -202,71 +115,78 @@
   const db = firebase.database();
   const ref = db.ref('votes');
 
-  // 3) Nick/login
-  let currentNick = localStorage.getItem('nick');
-  if (currentNick) showApp();
+  // 3) Toast
+  let toastTimer=null;
+  function toast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg;
+    t.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.add('hidden'),2200);
+  }
 
-  function login() {
-    const nick = document.getElementById('nick').value.trim();
-    if (!nick) return;
-    localStorage.setItem('nick', nick);
+  // 4) Login state
+  let currentNick = localStorage.getItem('nick') || '';
+  const loginDiv = document.getElementById('login');
+  const appDiv = document.getElementById('app');
+  const nickDisplay = document.getElementById('nickDisplay');
+
+  function showApp(){
+    loginDiv.classList.add('hidden');
+    appDiv.classList.remove('hidden');
+    nickDisplay.textContent = currentNick;
+  }
+
+  function showLogin(){
+    appDiv.classList.add('hidden');
+    loginDiv.classList.remove('hidden');
+  }
+
+  function doLogin(){
+    const nick = (document.getElementById('nick').value || '').trim();
+    if(!nick){ toast('Adj meg egy nicknevet'); return; }
     currentNick = nick;
+    localStorage.setItem('nick', nick);
     showApp();
   }
 
-  function logout() {
+  function doLogout(){
     localStorage.removeItem('nick');
-    currentNick = null;
-    location.reload();
+    currentNick='';
+    showLogin();
   }
 
-  function showApp() {
-    document.getElementById('login').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('nickDisplay').innerText = currentNick;
-  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('logoutBtn').addEventListener('click', () => location.reload());
 
-  // 4) UI üzenet
-  let toastTimer = null;
-  function toast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.remove('hidden');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
-  }
+  // auto-login if saved
+  if(currentNick) showApp();
 
-  // 5) Helper: Firebase kulcs biztonságos (nem lehet / . # $ [ ])
-  function toSafeKey(s) {
-    return (s || '').replace(/[\.#$\[\]\/]/g, '_');
-  }
+  // 5) Add option (ID safe, title stored)
+  function addOption(){
+    if(!currentNick){ toast('Előbb lépj be nickkel'); return; }
 
-  // 6) Opció hozzáadása
-  function addOption() {
-    if (!currentNick) return;
-
-    const name = document.getElementById('name').value.trim();
-    const link = document.getElementById('link').value.trim();
+    const title = (document.getElementById('name').value || '').trim();
+    const link = (document.getElementById('link').value || '').trim();
     const needBuy = document.getElementById('needBuy').checked;
     const gamepass = document.getElementById('gamepass').checked;
-    if (!name) return;
+    if(!title){ toast('Adj meg egy opció nevet'); return; }
 
-    ref.child(id).transaction nem tartalmazhatja: . # $ [ ] /
-    // Ezért az adatbázisban egy "biztonságos" ID-t használunk, és eltároljuk a megjelenített címet külön.
-    const id = toSafeKey(name);
+    const id = toSafeKey(title);
 
     ref.child(id).transaction(current => {
-      if (current) {
-        if ((!current.title || current.title === '') && name) current.title = name;
-        if ((!current.link || current.link === '') && link) current.link = link;
-        if (!current.needBuy && needBuy) current.needBuy = true;
-        if (!current.gamepass && gamepass) current.gamepass = true;
+      if(current){
+        // laza frissítés: ha eddig üres/hamis volt
+        if((!current.title || current.title==='') && title) current.title = title;
+        if((!current.link || current.link==='') && link) current.link = link;
+        if(!current.needBuy && needBuy) current.needBuy = true;
+        if(!current.gamepass && gamepass) current.gamepass = true;
         return current;
       }
       return {
-        title: name,
+        title,
         votes: 0,
-        link: link,
+        link,
         needBuy: !!needBuy,
         gamepass: !!gamepass,
         createdBy: currentNick,
@@ -274,135 +194,129 @@
       };
     });
 
-    document.getElementById('name').value = '';
-    document.getElementById('link').value = '';
-    document.getElementById('needBuy').checked = false;
-    document.getElementById('gamepass').checked = false;
+    document.getElementById('name').value='';
+    document.getElementById('link').value='';
+    document.getElementById('needBuy').checked=false;
+    document.getElementById('gamepass').checked=false;
     toast('✅ Opció hozzáadva');
   }
 
-  // 7) Szavazás: 1 nick = 1 szavazat / opció
-  function vote(optionId) {
-    if (!currentNick) return;
-    consntNick);
+  document.getElementById('addBtn').addEventListener('click', addOption);
 
+  // 6) Vote (1 nick per option)
+  function vote(optionId){
+    if(!currentNick){ toast('Előbb lépj be nickkel'); return; }
+    const nickKey = toSafeKey(currentNick);
     const optionRef = ref.child(optionId);
-    const voterRef = optionRef.child('voters').childsting => {
-      if (existing) return; // már szavazott
+    const voterRef = optionRef.child('voters').child(nickKey);
+
+    voterRef.transaction(existing => {
+      if(existing) return; // already voted
       return { nick: currentNick, at: Date.now() };
     }, (error, committed) => {
-      if (error) {
-        console.error(error);
-        toast('⛔ Hiba a szavazásnál');
-        return;
-      }
-      if (!committed) {
-        toast('ℹ️ Erre már szavaztál');
-        return;
-      }
-      optionRef.child('votes').transaction(v => (v || 0) + 1);
+      if(error){ console.error(error); toast('⛔ Hiba a szavazásnál'); return; }
+      if(!committed){ toast('ℹ️ Erre már szavaztál'); return; }
+      optionRef.child('votes').transaction(v => (v||0)+1);
       toast('🗳️ Szavazat rögzítve');
     });
   }
 
-  // 8) Render: opciók + link + jelölők + szavazók
+  // 7) Edit (only creator; LAN-laza)
+  function saveEdit(optionId){
+    const panelId = `edit_${toSafeKey(optionId)}`;
+    const newLink = (document.getElementById(panelId + '_link').value || '').trim();
+    const newNeedBuy = document.getElementById(panelId + '_needBuy').checked;
+    const newGamepass = document.getElementById(panelId + '_gamepass').checked;
+
+    ref.child(optionId).transaction(curr => {
+      if(!curr) return curr;
+      if(curr.createdBy !== currentNick) return curr;
+      curr.link = newLink;
+      curr.needBuy = !!newNeedBuy;
+      curr.gamepass = !!newGamepass;
+      return curr;
+    }, (err, committed) => {
+      if(err){ console.error(err); toast('⛔ Mentés hiba'); return; }
+      if(committed){ toast('✅ Mentve'); document.getElementById(panelId).classList.add('hidden'); }
+      else toast('⛔ Nem sikerült menteni');
+    });
+  }
+
+  // 8) Render
   ref.on('value', snap => {
     const data = snap.val() || {};
     const container = document.getElementById('options');
-    containeap(x => x?.nick)
-        .filter(Boolean)
-        .sort((x, y) => x.localeCompare(y, 'hu'));
+    container.innerHTML = '';
 
-      const linkHtml = o.link
-        ? `<a href="${o.link}" target="_blank" rel="noopener">🔗 Link megnyitása</a>`
-        : '';
+    const ids = Object.keys(data).sort((a,b)=> (data[b]?.votes||0) - (data[a]?.votes||0));
+
+    ids.forEach(optionId => {
+      const o = data[optionId] || {};
+      const title = (o.title && String(o.title).trim()) ? String(o.title).trim() : optionId;
+
+      const votersObj = o.voters || {};
+      const voterNames = Object.values(votersObj)
+        .map(x => x && x.nick)
+        .filter(Boolean)
+        .sort((x,y)=> x.localeCompare(y,'hu'));
 
       const badges = [];
-      badges.push(`<span classvazat</span>`);
-      if (o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
-      if (o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
+      badges.push(`<span class="pill">${o.votes || 0} szavazat</span>`);
+      if(o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
+      if(o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
+      if(o.createdBy) badges.push(`<span class="pill">➕ ${escapeAttr(o.createdBy)}</span>`);
+
+      const linkHtml = o.link ? `<a href="${escapeAttr(o.link)}" target="_blank" rel="noopener">🔗 Link megnyitása</a>` : '';
 
       const votersHtml = voterNames.length
-        ? `<div class="voters"><b>Szavazók (${voterNames.length}):</b> ${voterNames.join(', ')}</div>`
+        ? `<div class="voters"><b>Szavazók (${voterNames.length}):</b> ${voterNames.map(escapeAttr).join(', ')}</div>`
         : `<div class="voters"><b>Szavazók (0):</b> még senki</div>`;
 
       const isOwner = !!currentNick && o.createdBy === currentNick;
-      const displayTitle = (o.title && String(o.title).trim()) ? String(o.title).trim() : id;
-      const ownerHtml = o.createdBy ? `<span class="pill">➕ ${o.createdBy}</span>` : '';
-
-      const editPanelId = `edit_${toSafeKey(id)}`;
+      const editPanelId = `edit_${toSafeKey(optionId)}`;
 
       const div = document.createElement('div');
       div.className = 'option';
       div.innerHTML = `
-        <div class="optionHeadss="optionTitle">${displayTitle}</div>
+        <div class="optionHeader">
+          <div style="min-width:0">
+            <div class="optionTitle">${escapeAttr(title)}</div>
             ${linkHtml}
-            <div class="badges">${badges.join('')}${ownerHtml}</div>
+            <div class="badges">${badges.join('')}</div>
           </div>
-          <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; justify-content:fl type="button" data-action="vote">Szavazok</button>
-            ${isOwner ? `<button class="btnSmall btnGhost" type="button" data-action="edit">Szerkesztés</button>` : ''}
+          <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btnSmall" type="button" data-act="vote">Szavazok</button>
+            ${isOwner ? `<button class="btnSmall btnGhost" type="button" data-act="edit">Szerkesztés</button>` : ''}
           </div>
         </div>
 
-        <div id="${editPanelId}" class="hidden" style="margin-top:10px; border-top:1px dashed #1e293b; padding-top:10px;">
-          <div class="muted">Szerkesztés (csak a létrehozó):</div>
-          <div class="row two" style="margin-top:6px">
-            <input id="${editPanelId}_link" placeholder="Link" value="${(o.link || '').replace(/"/g,'&quot;')}" />
-            <div class="checks" style="margin-top:0">
-              <label class="check"><input type="checkbox" id="${editPanelId}_needBuy" ${o.needBuy ? 'checked' : ''} /> Meg kell venni</label>
-              <label class="check"><input type="checkbox" id="${editPanelId}_gamepass" ${o.gamepass ? 'checked' : ''} /> Game Pass-os</label>
+        ${isOwner ? `
+          <div id="${editPanelId}" class="hidden" style="margin-top:10px; border-top:1px dashed #1e293b; padding-top:10px;">
+            <div class="muted">Szerkesztés (csak a létrehozó):</div>
+            <div class="row two" style="margin-top:6px">
+              <input id="${editPanelId}_link" placeholder="Link" value="${escapeAttr(o.link || '')}" />
+              <div class="checks" style="margin-top:0">
+                <label class="check"><input type="checkbox" id="${editPanelId}_needBuy" ${o.needBuy ? 'checked' : ''} /> Meg kell venni</label>
+                <label class="check"><input type="checkbox" id="${editPanelId}_gamepass" ${o.gamepass ? 'checked' : ''} /> Game Pass-os</label>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+              <button class="btnSmall" type="button" data-act="save">Mentés</button>
+              <button class="btnSmall btnGhost" type="button" data-act="cancel">Mégse</button>
             </div>
           </div>
-          <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-            <button class="btnSmall" type="button" data-action="save">Mentés</button>
-            <button class="btnSmall btnGhost" type="button" data-action="cancel">Mégse</button>
-          </div>
-          <div class="muted" style="margin-top:6px">Megjegyzés: a szavazatok és a szavazók listája nem változik.</div>
-        </div>
+        ` : ''}
 
         ${votersHtml}
       `;
 
-      const voteBtn = div.querySelector('button[data-action="vote"]');
-      voteBtn.onclick = () => vote(id);
+      div.querySelector('button[data-act="vote"]').onclick = () => vote(optionId);
 
-      if (isOwner) {
-        const editBtn = div.querySelector('button[data-action="edit"]');
-        const panel = div.querySelector(`#${editPanelId}`);
-        editBtn.onclick = () => panel.classList.toggle('hidden');
-
-        const saveBtn = div.querySelector('button[data-action="save"]');
-        const cancelBtn = div.querySelector('button[data-action="cancel"]');
-
-        cancelBtn.onclick = () => panel.classList.add('hidden');
-
-        saveBtn.onclick = () => {
-          const newLink = div.querySelector(`#${editPanelId}_link`).value.trim();
-          const newNeedBuy = div.querySelector(`#${editPanelId}_needBuy`).checked;
-          const newGamepass = div.querySelector(`#${editPanelId}_gamepass`).checked;
-
-          // Csak a saját opciódat szerkesztheted (UI + adat oldalon is ellenőrizzük)
-          ref.child(name).transaction(curr => {
-            if (!curr) return curr;
-            if (curr.createdBy !== currentNick) return curr;
-            curr.link = newLink;
-            curr.needBuy = !!newNeedBuy;
-            curr.gamepass = !!newGamepass;
-            return curr;
-          }, (err, committed) => {
-            if (err) {
-              console.error(err);
-              toast('⛔ Mentés hiba');
-              return;
-            }
-            if (committed) {
-              toast('✅ Mentve');
-              panel.classList.add('hidden');
-            } else {
-              toast('⛔ Nem sikerült menteni');
-            }
-          });
-        };
+      if(isOwner){
+        const panel = div.querySelector('#' + editPanelId);
+        div.querySelector('button[data-act="edit"]').onclick = () => panel.classList.toggle('hidden');
+        div.querySelector('button[data-act="cancel"]').onclick = () => panel.classList.add('hidden');
+        div.querySelector('button[data-act="save"]').onclick = () => saveEdit(optionId);
       }
 
       container.appendChild(div);
