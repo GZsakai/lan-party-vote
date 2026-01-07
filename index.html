@@ -20,10 +20,12 @@
       padding: 20px;
       border-radius: 12px;
       width: 100%;
-      max-width: 550px;
+      max-width: 720px;
       box-shadow: 0 10px 30px rgba(0,0,0,.4);
     }
-    h1 { text-align: center; }
+    h1 { text-align: center; margin: 0 0 10px; }
+    .muted { color: #94a3b8; font-size: 13px; }
+
     input, button {
       width: 100%;
       padding: 10px;
@@ -38,37 +40,136 @@
       cursor: pointer;
     }
     button:hover { background: #1d4ed8; }
+
+    .row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    @media (min-width: 560px) {
+      .row.two { grid-template-columns: 1fr 1fr; }
+      .row.three { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
     .option {
       background: #020617;
       border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .optionHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .optionTitle { font-weight: 700; font-size: 16px; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pill {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #1e293b;
+      color: #cbd5e1;
+      background: rgba(148,163,184,.06);
+      white-space: nowrap;
+    }
+
+    .btnSmall {
+      width: auto;
+      padding: 8px 10px;
       border-radius: 8px;
-      padding: 10px;
-      margin-top: 8px;
-      cursor: pointer;
-    }
-    .option a {
-      color: #60a5fa;
       font-size: 13px;
-      display: block;
+      margin-top: 0;
     }
+    .btnGhost {
+      background: transparent;
+      border: 1px solid #1e293b;
+      color: #e5e7eb;
+    }
+    .btnGhost:hover { background: rgba(148,163,184,.08); }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .voters {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #1e293b;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.35;
+    }
+    .voters b { color: #e5e7eb; }
+
     .hidden { display: none; }
+
+    .toast {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      background: rgba(148,163,184,.06);
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    .check {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid #1e293b;
+      background: rgba(148,163,184,.04);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #e5e7eb;
+    }
+    .check input { width: auto; margin: 0; padding: 0; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>🎮 LAN Party Szavazás</h1>
+    <div class="muted" id="gateInfo"></div>
 
     <div id="login">
-      <input id="nick" placeholder="Add meg a nickneved" />
+      <input id="nick" placeholder="Add meg a nickneved" maxlength="24" />
       <button onclick="login()">Belépés</button>
+      <div class="muted">Tipp: legyen egyedi (pl. "Pisti#1"), hogy lássuk ki szavazott.</div>
     </div>
 
     <div id="app" class="hidden">
-      <p>Belépve mint: <strong id="nickDisplay"></strong></p>
+      <div class="row two">
+        <div>
+          Belépve mint: <strong id="nickDisplay"></strong>
+          <div class="muted">Egy opcióra csak <b>egyszer</b> szavazhatsz, de több opcióra igen.</div>
+        </div>
+        <button class="btnSmall btnGhost" onclick="logout()">Nick váltása</button>
+      </div>
+
+      <div id="toast" class="toast hidden"></div>
+
       <div id="options"></div>
-      <input id="name" placeholder="Opció neve (pl. CS2)" />
-      <input id="link" placeholder="Link (Steam / trailer)" />
-      <button onclick="addOption()">Opció hozzáadása</button>
+
+      <div style="margin-top:14px">
+        <div class="muted">Új opció hozzáadása:</div>
+        <div class="row two">
+          <input id="name" placeholder="Opció neve (pl. CS2)" />
+          <input id="link" placeholder="Link (Steam / trailer)" />
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="needBuy" /> Meg kell venni</label>
+          <label class="check"><input type="checkbox" id="gamepass" /> Game Pass-os</label>
+        </div>
+        <button onclick="addOption()">Opció hozzáadása</button>
+        <div class="muted">Tipp: ha egy opció már létezik, a jelölők és a link csak akkor frissülnek, ha eddig üres/hamis volt.</div>
+      </div>
     </div>
   </div>
 
@@ -76,12 +177,7 @@
   // 🔐 TITKOS LINK TOKEN (csak akinek megvan a link)
   const REQUIRED_TOKEN = 'lanparty2026';
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('token') !== REQUIRED_TOKEN) {
-    document.body.innerHTML = '<h2>⛔ Nincs jogosultság</h2>';
-    throw new Error('Invalid token');
-  }
-
+  // 🔥 FIREBASE – IDE A SAJÁTOD
   const firebaseConfig = {
     apiKey: "AIzaSyBEhR52XM8wMvk4zThtopiE9GtifTtFU4o",
     authDomain: "lan-party-vote.firebaseapp.com",
@@ -89,10 +185,24 @@
     projectId: "lan-party-vote"
   };
 
+  // -----------------------------
+
+  // 1) Link-gate (token)
+  const params = new URLSearchParams(window.location.search);
+  const tokenOk = params.get('token') === REQUIRED_TOKEN;
+  const gateInfo = document.getElementById('gateInfo');
+  gateInfo.textContent = tokenOk ? '✅ Privát link: OK' : '⛔ Nincs jogosultság (rossz token)';
+  if (!tokenOk) {
+    document.getElementById('login').classList.add('hidden');
+    throw new Error('Invalid token');
+  }
+
+  // 2) Firebase init
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const ref = db.ref('votes');
 
+  // 3) Nick/login
   let currentNick = localStorage.getItem('nick');
   if (currentNick) showApp();
 
@@ -104,49 +214,207 @@
     showApp();
   }
 
+  function logout() {
+    localStorage.removeItem('nick');
+    currentNick = null;
+    location.reload();
+  }
+
   function showApp() {
     document.getElementById('login').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('nickDisplay').innerText = currentNick;
   }
 
+  // 4) UI üzenet
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+  }
+
+  // 5) Helper: Firebase kulcs biztonságos (nem lehet / . # $ [ ])
+  function toSafeKey(s) {
+    return (s || '').replace(/[\.#$\[\]\/]/g, '_');
+  }
+
+  // 6) Opció hozzáadása
   function addOption() {
+    if (!currentNick) return;
+
     const name = document.getElementById('name').value.trim();
     const link = document.getElementById('link').value.trim();
+    const needBuy = document.getElementById('needBuy').checked;
+    const gamepass = document.getElementById('gamepass').checked;
     if (!name) return;
 
     ref.child(name).transaction(current => {
       if (current) {
-        current.votes++;
+        // csak "okosan" frissítünk: ha eddig üres/hamis volt
+        if ((!current.link || current.link === '') && link) current.link = link;
+        if (!current.needBuy && needBuy) current.needBuy = true;
+        if (!current.gamepass && gamepass) current.gamepass = true;
         return current;
       }
-      return { votes: 1, link: link, by: currentNick };
+      return {
+        votes: 0,
+        link: link,
+        needBuy: !!needBuy,
+        gamepass: !!gamepass,
+        createdBy: currentNick,
+        voters: {}
+      };
     });
 
     document.getElementById('name').value = '';
     document.getElementById('link').value = '';
+    document.getElementById('needBuy').checked = false;
+    document.getElementById('gamepass').checked = false;
+    toast('✅ Opció hozzáadva');
   }
 
+  // 7) Szavazás: 1 nick = 1 szavazat / opció
+  function vote(optionName) {
+    if (!currentNick) return;
+    const nickKey = toSafeKey(currentNick);
+
+    const optionRef = ref.child(optionName);
+    const voterRef = optionRef.child('voters').child(nickKey);
+
+    voterRef.transaction(existing => {
+      if (existing) return; // már szavazott
+      return { nick: currentNick, at: Date.now() };
+    }, (error, committed) => {
+      if (error) {
+        console.error(error);
+        toast('⛔ Hiba a szavazásnál');
+        return;
+      }
+      if (!committed) {
+        toast('ℹ️ Erre már szavaztál');
+        return;
+      }
+      optionRef.child('votes').transaction(v => (v || 0) + 1);
+      toast('🗳️ Szavazat rögzítve');
+    });
+  }
+
+  // 8) Render: opciók + link + jelölők + szavazók
   ref.on('value', snap => {
     const data = snap.val() || {};
     const container = document.getElementById('options');
     container.innerHTML = '';
 
-    Object.keys(data).forEach(key => {
-      const o = data[key];
+    const keys = Object.keys(data).sort((a, b) => (data[b]?.votes || 0) - (data[a]?.votes || 0));
+
+    keys.forEach(name => {
+      const o = data[name] || {};
+      const votersObj = o.voters || {};
+      const voterNames = Object.values(votersObj)
+        .map(x => x?.nick)
+        .filter(Boolean)
+        .sort((x, y) => x.localeCompare(y, 'hu'));
+
+      const linkHtml = o.link
+        ? `<a href="${o.link}" target="_blank" rel="noopener">🔗 Link megnyitása</a>`
+        : '';
+
+      const badges = [];
+      badges.push(`<span class="pill">${o.votes || 0} szavazat</span>`);
+      if (o.needBuy) badges.push(`<span class="pill">💸 Meg kell venni</span>`);
+      if (o.gamepass) badges.push(`<span class="pill">🎮 Game Pass</span>`);
+
+      const votersHtml = voterNames.length
+        ? `<div class="voters"><b>Szavazók (${voterNames.length}):</b> ${voterNames.join(', ')}</div>`
+        : `<div class="voters"><b>Szavazók (0):</b> még senki</div>`;
+
+      const isOwner = !!currentNick && o.createdBy === currentNick;
+      const ownerHtml = o.createdBy ? `<span class="pill">➕ ${o.createdBy}</span>` : '';
+
+      const editPanelId = `edit_${toSafeKey(name)}`;
+
       const div = document.createElement('div');
       div.className = 'option';
-      div.innerHTML = `<strong>${key}</strong> – ${o.votes} szavazat` +
-        (o.link ? `<a href="${o.link}" target="_blank">🔗 link</a>` : '') +
-        (o.by ? `<small>Hozzáadta: ${o.by}</small>` : '');
-      div.onclick = () => vote(key);
+      div.innerHTML = `
+        <div class="optionHeader">
+          <div style="min-width:0">
+            <div class="optionTitle">${name}</div>
+            ${linkHtml}
+            <div class="badges">${badges.join('')}${ownerHtml}</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btnSmall" type="button" data-action="vote">Szavazok</button>
+            ${isOwner ? `<button class="btnSmall btnGhost" type="button" data-action="edit">Szerkesztés</button>` : ''}
+          </div>
+        </div>
+
+        <div id="${editPanelId}" class="hidden" style="margin-top:10px; border-top:1px dashed #1e293b; padding-top:10px;">
+          <div class="muted">Szerkesztés (csak a létrehozó):</div>
+          <div class="row two" style="margin-top:6px">
+            <input id="${editPanelId}_link" placeholder="Link" value="${(o.link || '').replace(/"/g,'&quot;')}" />
+            <div class="checks" style="margin-top:0">
+              <label class="check"><input type="checkbox" id="${editPanelId}_needBuy" ${o.needBuy ? 'checked' : ''} /> Meg kell venni</label>
+              <label class="check"><input type="checkbox" id="${editPanelId}_gamepass" ${o.gamepass ? 'checked' : ''} /> Game Pass-os</label>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+            <button class="btnSmall" type="button" data-action="save">Mentés</button>
+            <button class="btnSmall btnGhost" type="button" data-action="cancel">Mégse</button>
+          </div>
+          <div class="muted" style="margin-top:6px">Megjegyzés: a szavazatok és a szavazók listája nem változik.</div>
+        </div>
+
+        ${votersHtml}
+      `;
+
+      const voteBtn = div.querySelector('button[data-action="vote"]');
+      voteBtn.onclick = () => vote(name);
+
+      if (isOwner) {
+        const editBtn = div.querySelector('button[data-action="edit"]');
+        const panel = div.querySelector(`#${editPanelId}`);
+        editBtn.onclick = () => panel.classList.toggle('hidden');
+
+        const saveBtn = div.querySelector('button[data-action="save"]');
+        const cancelBtn = div.querySelector('button[data-action="cancel"]');
+
+        cancelBtn.onclick = () => panel.classList.add('hidden');
+
+        saveBtn.onclick = () => {
+          const newLink = div.querySelector(`#${editPanelId}_link`).value.trim();
+          const newNeedBuy = div.querySelector(`#${editPanelId}_needBuy`).checked;
+          const newGamepass = div.querySelector(`#${editPanelId}_gamepass`).checked;
+
+          // Csak a saját opciódat szerkesztheted (UI + adat oldalon is ellenőrizzük)
+          ref.child(name).transaction(curr => {
+            if (!curr) return curr;
+            if (curr.createdBy !== currentNick) return curr;
+            curr.link = newLink;
+            curr.needBuy = !!newNeedBuy;
+            curr.gamepass = !!newGamepass;
+            return curr;
+          }, (err, committed) => {
+            if (err) {
+              console.error(err);
+              toast('⛔ Mentés hiba');
+              return;
+            }
+            if (committed) {
+              toast('✅ Mentve');
+              panel.classList.add('hidden');
+            } else {
+              toast('⛔ Nem sikerült menteni');
+            }
+          });
+        };
+      }
+
       container.appendChild(div);
     });
   });
-
-  function vote(key) {
-    ref.child(key + '/votes').transaction(v => (v || 0) + 1);
-  }
 </script>
 </body>
 </html>
